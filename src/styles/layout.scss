@@ -1,0 +1,321 @@
+$app-header-height: 8vh;
+$app-footer-height: 5vh;
+$app-content-height: 98vh;
+
+body {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    overflow: auto;
+}
+
+.app-container {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    width: 100vw;
+    overflow: hidden; 
+}
+
+.app-background {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    z-index: 1;
+    pointer-events: none;
+}
+
+.particle {
+    position: absolute;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    animation: float 6s ease-in-out infinite;
+}
+
+.particle-1 { width: 80px; height: 80px; top: 20%; left: 10%; animation-delay: 0s; }
+.particle-2 { width: 60px; height: 60px; top: 60%; right: 10%; animation-delay: 2s; }
+.particle-3 { width: 100px; height: 100px; bottom: 20%; left: 20%; animation-delay: 4s; }
+.particle-4 { width: 40px; height: 40px; top: 30%; right: 30%; animation-delay: 1s; }
+.particle-5 { width: 70px; height: 70px; bottom: 40%; right: 20%; animation-delay: 3s; }
+.particle-6 { width: 90px; height: 90px; top: 50%; left: 3%; animation-delay: 5s; }
+.particle-7 { width: 50px; height: 50px; top: 15%; left: 40%; animation-delay: 1.5s; }
+.particle-8 { width: 110px; height: 110px; bottom: 60%; right: 40%; animation-delay: 2.5s; }
+.particle-9 { width: 45px; height: 45px; top: 80%; left: 60%; animation-delay: 3.5s; }
+.particle-10 { width: 85px; height: 85px; top: 35%; right: 5%; animation-delay: 2s; }
+
+@keyframes float {
+    0%, 100% {
+        transform: translateY(0px) rotate(0deg);
+        opacity: 0.3;
+    }
+    50% {
+        transform: translateY(-20px) rotate(180deg);
+        opacity: 0.8;
+    }
+}
+
+
+.header-wrapper {
+    animation: slideDown 0.8s ease-out;
+    position: relative;
+    z-index: 1000;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.app-content {
+    flex: 1;
+    padding: 1rem;
+    overflow-y: auto;
+    animation: slideUp 0.8s ease-out 0.2s both;
+    position: relative;
+    z-index: 10;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+
+.footer-wrapper {
+    animation: slideUp 0.8s ease-out 0.4s both;
+    position: relative;
+    z-index: 100; 
+}
+
+
+.content-wrapper > *:nth-child(1) { animation: fadeInUp 0.6s ease-out 0.6s both; }
+.content-wrapper > *:nth-child(2) { animation: fadeInUp 0.6s ease-out 0.7s both; }
+.content-wrapper > *:nth-child(3) { animation: fadeInUp 0.6s ease-out 0.8s both; }
+.content-wrapper > *:nth-child(4) { animation: fadeInUp 0.6s ease-out 0.9s both; }
+.content-wrapper > *:nth-child(5) { animation: fadeInUp 0.6s ease-out 1.0s both; }
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(15px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (max-width: 768px) {
+    .particle {
+        display: none;
+    }
+}
+
+
+
+.app-header {
+    max-height: $app-header-height;
+    max-width: 100vw !important;
+    padding: 0 1rem;
+    position: relative;
+}
+
+.img-logo-header {
+    width: 90%;
+    position: absolute;
+    top: 0;
+    left: 1rem;
+    z-index: 1;
+}
+
+@keyframes glow {
+    from {
+        text-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+    }
+
+    to {
+        text-shadow: 0 0 20px rgba(0, 212, 255, 0.8), 0 0 30px rgba(0, 212, 255, 0.6);
+    }
+}
+
+@media (max-width: 768px) {
+    .datetime-container {
+        max-width: 250px;
+        padding: 12px;
+    }
+
+    .img-logo-header {
+        width: 50%;
+    }
+
+    .date-display {
+        font-size: 1.4rem;
+    }
+
+    .time-display {
+        font-size: 1.8rem;
+    }
+}
+
+.profile-container {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    color: white;
+    border-radius: 12px;
+    padding: 8px 12px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    max-width: fit-content;
+    min-width: fit-content;
+    flex-shrink: 0; // Impede que encolha demais
+}
+
+.welcome-text {
+    color: white;
+    font-size: 0.85rem;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+    line-height: 1.2;
+    text-align: right;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    
+    .welcome-greeting {
+        font-size: 0.75rem;
+        opacity: 0.9;
+        margin-bottom: 2px;
+    }
+    
+    .user-name {
+        font-weight: 600;
+        color: #ffffff;
+        font-size: 0.85rem;
+    }
+}
+
+.user-avatar {
+    width: 36px;
+    height: 36px;
+    font-weight: bold;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+}
+
+
+@media (max-width: 1100px) {
+    .profile-container {
+        padding: 6px 10px;
+        border-radius: 10px;
+    }
+    
+    .welcome-text {
+        font-size: 0.8rem;
+        
+        .welcome-greeting {
+            font-size: 0.7rem;
+        }
+        
+        .user-name {
+            font-size: 0.8rem;
+        }
+    }
+    
+    .user-avatar {
+        width: 32px;
+        height: 32px;
+        font-size: 0.8rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .profile-container {
+        padding: 6px 8px;
+        gap: 6px;
+    }
+
+    .welcome-text {
+        font-size: 0.75rem;
+        margin-right: 0 !important;
+        
+        .welcome-greeting {
+            font-size: 0.65rem;
+        }
+        
+        .user-name {
+            font-size: 0.75rem;
+        }
+    }
+    
+    .user-avatar {
+        width: 30px;
+        height: 30px;
+        font-size: 0.75rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .welcome-text {
+        .welcome-greeting {
+            display: none;
+        }
+        
+        .user-name {
+            font-size: 0.7rem;
+        }
+    }
+    
+    .profile-container {
+        padding: 4px 6px;
+        min-width: auto;
+    }
+    
+    .user-avatar {
+        width: 28px;
+        height: 28px;
+        font-size: 0.7rem;
+    }
+}
+
+
+@media (max-width: 480px) {
+    .welcome-text {
+        display: none;
+    }
+    
+    .profile-container {
+        padding: 4px;
+        border-radius: 8px;
+    }
+}
+
+
+.app-footer {
+    margin-top: auto;       
+    margin-left: auto;      
+    margin-right: auto;      
+    margin-bottom: 20px;    
+    width: 70vw;
+    height: auto;
+    min-height: $app-footer-height;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 10px;
+    box-shadow: 6px 8px 8px rgba(1, 0, 0, 0.3);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+

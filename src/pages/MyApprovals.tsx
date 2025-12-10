@@ -6,8 +6,8 @@ import '../styles/dashboard.scss';
 import { useDispatch, useSelector } from "react-redux";
 import { setPageTitle } from "../redux/slices/pageTitleSlice";
 import { setPageSubtitle } from '../redux/slices/pageSubtitleSlice';
-import { getUserApproves, getApprovesDetail, stepForwardTicket, getTicketDetails } from '../services/approvalsService';
-import { CheckCircle, XCircle, GitPullRequest, Building2, Hash, CalendarDays, User, UserCheck, Bolt } from 'lucide-react';
+import { getUserApproves, getApprovesDetail, stepForwardTicket, getTicketFlowCode } from '../services/approvalsService';
+import { CheckCircle, XCircle, GitPullRequest, Building2, CalendarDays, User, UserCheck, Bolt } from 'lucide-react';
 import type { RootState } from '../redux/store';
 import { createPortal } from "react-dom";
 import '../styles/productModal.scss';
@@ -25,9 +25,9 @@ interface Approval {
     APROVADOR: string;
 }
 
-interface StepCodes {
-    nextStepCode: number;
-    flowsStepCode: number;
+interface FlowStep {
+    CODPROXTAREFA: number;
+    DESCRICAO: string;
 }
 
 export default function Approvals() {
@@ -47,8 +47,8 @@ export default function Approvals() {
     const [selectedApproval, setSelectedApproval] = useState<Approval | null>(null);
     const [approvalDetail, setApprovalDetail] = useState<any[]>([]);
     const [loadingDetail, setLoadingDetail] = useState(false);
-    const [ticketDetails, setTicketDetails] = useState<any>(null);
-    const [loadingTicketDetails, setLoadingTicketDetails] = useState(false);
+    const [flowSteps, setFlowSteps] = useState<FlowStep[]>([]);
+    const [loadingFlowSteps, setLoadingFlowSteps] = useState(false);
     const [processingAction, setProcessingAction] = useState(false);
     const [showRejectAlert, setShowRejectAlert] = useState(false);
     const [showSuccessAlert, setShowSuccessAlert] = useState(false);
@@ -101,52 +101,11 @@ export default function Approvals() {
         }
     };
 
-    const getStepCodes = (taskCode: number, isApproved: boolean): StepCodes | null => {
-        const stepMapping: Record<number, { approved: StepCodes; rejected: StepCodes }> = {
-            214: {
-                approved: { nextStepCode: 215, flowsStepCode: 280 },
-                rejected: { nextStepCode: 176, flowsStepCode: 287 }
-            },
-            215: {
-                approved: { nextStepCode: 216, flowsStepCode: 281 },
-                rejected: { nextStepCode: 176, flowsStepCode: 288 }
-            },
-            216: {
-                approved: { nextStepCode: 217, flowsStepCode: 282 },
-                rejected: { nextStepCode: 176, flowsStepCode: 289 }
-            },
-            217: {
-                approved: { nextStepCode: 218, flowsStepCode: 283 },
-                rejected: { nextStepCode: 176, flowsStepCode: 290 }
-            },
-            218: {
-                approved: { nextStepCode: 219, flowsStepCode: 284 },
-                rejected: { nextStepCode: 176, flowsStepCode: 291 }
-            },
-            219: {
-                approved: { nextStepCode: 220, flowsStepCode: 285 },
-                rejected: { nextStepCode: 176, flowsStepCode: 292 }
-            },
-            220: {
-                approved: { nextStepCode: 175, flowsStepCode: 286 },
-                rejected: { nextStepCode: 176, flowsStepCode: 293 }
-            }
-        };
-
-        const mapping = stepMapping[taskCode];
-        if (!mapping) {
-            console.error(`❌ TaskCode ${taskCode} não encontrado no mapeamento de etapas`);
-            return null;
-        }
-
-        return isApproved ? mapping.approved : mapping.rejected;
-    };
-
     const handleOpenDetail = async (approval: Approval) => {
         setSelectedApproval(approval);
         setShowDetailModal(true);
         setLoadingDetail(true);
-        setLoadingTicketDetails(true);
+        setLoadingFlowSteps(true);
 
         try {
             // Buscar detalhes do aprovador (tabela)
@@ -165,20 +124,28 @@ export default function Approvals() {
         }
 
         try {
-            // Buscar detalhes do ticket (etapa atual e outras informações)
-            const ticketResponse = await getTicketDetails(
+            // Buscar próximas tarefas do fluxo (aprovação e rejeição)
+            const flowResponse = await getTicketFlowCode(
                 approval.CODCOLIGADA,
-                approval.CODLOCAL,
                 approval.CODATENDIMENTO
             );
-            setTicketDetails(ticketResponse);
-            console.log('🎯 DETALHES DO TICKET:', ticketResponse);
-            console.log('📋 TaskCode atual:', ticketResponse?.taskCode);
+            
+            console.log('🎯 FLUXO RETORNADO:', flowResponse);
+            
+            let flowData: FlowStep[] = [];
+            if (Array.isArray(flowResponse)) {
+                flowData = flowResponse;
+            } else if (flowResponse && typeof flowResponse === 'object') {
+                flowData = flowResponse.data || flowResponse.items || [flowResponse];
+            }
+            
+            setFlowSteps(flowData);
+            console.log('📋 Etapas do fluxo:', flowData);
         } catch (err) {
-            console.error('❌ Erro ao buscar detalhes do ticket:', err);
-            setTicketDetails(null);
+            console.error('❌ Erro ao buscar etapas do fluxo:', err);
+            setFlowSteps([]);
         } finally {
-            setLoadingTicketDetails(false);
+            setLoadingFlowSteps(false);
         }
     };
 
@@ -186,36 +153,36 @@ export default function Approvals() {
         setShowDetailModal(false);
         setSelectedApproval(null);
         setApprovalDetail([]);
-        setTicketDetails(null);
+        setFlowSteps([]);
     };
 
     const handleApprove = async (approval: Approval, comments: string = '') => {
         try {
             setProcessingAction(true);
 
-            // Verificar se temos os detalhes do ticket
-            if (!ticketDetails || !ticketDetails.taskCode) {
-                alert('❌ Erro: Não foi possível obter as informações da etapa atual. Tente novamente.');
+            // Verificar se temos as etapas do fluxo
+            if (!flowSteps || flowSteps.length === 0) {
+                alert('❌ Erro: Não foi possível obter as informações das próximas etapas. Tente novamente.');
                 return;
             }
 
-            // Obter os códigos corretos baseado no taskCode atual
-            const stepCodes = getStepCodes(ticketDetails.taskCode, true);
-
-            if (!stepCodes) {
-                alert(`❌ Erro: Etapa atual (${ticketDetails.taskCode}) não reconhecida. Entre em contato com o suporte.`);
+            // A primeira linha é a etapa de aprovação
+            const approveStep = flowSteps[0];
+            
+            if (!approveStep || !approveStep.CODPROXTAREFA) {
+                alert('❌ Erro: Etapa de aprovação não encontrada. Entre em contato com o suporte.');
                 return;
             }
 
-            console.log('✅ Aprovando com códigos:', stepCodes);
+            console.log('✅ Aprovando com etapa:', approveStep);
 
             const payload = {
                 id: `${approval.CODCOLIGADA}|${approval.CODLOCAL}|${approval.CODATENDIMENTO}`,
                 companyId: approval.CODCOLIGADA,
                 locationId: approval.CODLOCAL,
                 ticketId: approval.CODATENDIMENTO,
-                nextStepCode: stepCodes.nextStepCode,
-                flowsStepCode: stepCodes.flowsStepCode,
+                nextStepCode: approveStep.CODPROXTAREFA,
+                flowsStepCode: approveStep.CODPROXTAREFA, // Ajuste conforme necessário
                 comments: comments || 'Aprovado via sistema',
                 stepSolution: comments || 'Aprovado'
             };
@@ -229,7 +196,6 @@ export default function Approvals() {
             });
             setShowResponseModal(true);
 
-
         } catch (err) {
             alert(
                 `✖ ERRO AO PROCESSAR A APROVAÇÃO\n\n` +
@@ -240,30 +206,33 @@ export default function Approvals() {
         }
     };
 
-
     const handleReject = async (approval: Approval, comments: string = '') => {
         try {
             setProcessingAction(true);
 
-            if (!ticketDetails || !ticketDetails.taskCode) {
-                alert('❌ Erro: Não foi possível obter as informações da etapa atual. Tente novamente.');
+            // Verificar se temos as etapas do fluxo
+            if (!flowSteps || flowSteps.length < 2) {
+                alert('❌ Erro: Não foi possível obter as informações das próximas etapas. Tente novamente.');
                 return;
             }
 
-            const stepCodes = getStepCodes(ticketDetails.taskCode, false);
+            // A segunda linha é a etapa de rejeição
+            const rejectStep = flowSteps[1];
 
-            if (!stepCodes) {
-                alert(`❌ Erro: Etapa atual (${ticketDetails.taskCode}) não reconhecida. Entre em contato com o suporte.`);
+            if (!rejectStep || !rejectStep.CODPROXTAREFA) {
+                alert('❌ Erro: Etapa de rejeição não encontrada. Entre em contato com o suporte.');
                 return;
             }
+
+            console.log('❌ Rejeitando com etapa:', rejectStep);
 
             const payload = {
                 id: `${approval.CODCOLIGADA}|${approval.CODLOCAL}|${approval.CODATENDIMENTO}`,
                 companyId: approval.CODCOLIGADA,
                 locationId: approval.CODLOCAL,
                 ticketId: approval.CODATENDIMENTO,
-                nextStepCode: stepCodes.nextStepCode,
-                flowsStepCode: stepCodes.flowsStepCode,
+                nextStepCode: rejectStep.CODPROXTAREFA,
+                flowsStepCode: rejectStep.CODPROXTAREFA, // Ajuste conforme necessário
                 comments: comments || 'Rejeitado via sistema',
                 stepSolution: comments || 'Rejeitado'
             };
@@ -283,7 +252,6 @@ export default function Approvals() {
             setProcessingAction(false);
         }
     };
-
 
     const handleCloseResponseModal = () => {
         setShowResponseModal(false);
@@ -361,26 +329,8 @@ export default function Approvals() {
         }
     ];
 
-
-
-
     return (
         <>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
             <Row className="m-0">
                 <Col>
                     {error && (
@@ -390,7 +340,7 @@ export default function Approvals() {
                     )}
 
                     {!loading && approvals.length === 0 && !error ? (
-                        <div className="card p-3 "  style={{ width: "100%", height: "70vh", boxShadow: "8px 8px 15px rgba(0,0,0,0.3)"}}>
+                        <div className="card p-3" style={{ width: "100%", height: "70vh", boxShadow: "8px 8px 15px rgba(0,0,0,0.3)"}}>
                             <div className="text-center py-5">
                                 <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>✅</div>
                                 <h5 className="text-muted mb-2">Nenhuma aprovação pendente</h5>
@@ -411,13 +361,12 @@ export default function Approvals() {
                             className="approvals-table"
                         />
                     )}
-                </Col >
+                </Col>
 
-                < Modal
+                <Modal
                     show={showDetailModal}
                     onHide={handleCloseDetail}
                     size="lg"
-
                     className="product-modal"
                 >
                     <Modal.Header closeButton className="border-0">
@@ -469,7 +418,7 @@ export default function Approvals() {
                                             <User size={20} />
                                             <div>
                                                 <span className="summary-label">Solicitante:</span>
-                                                <strong><div >{selectedApproval.SOLICITANTE}</div></strong>
+                                                <strong><div>{selectedApproval.SOLICITANTE}</div></strong>
                                             </div>
                                         </div>
                                     </Col>
@@ -506,12 +455,8 @@ export default function Approvals() {
                                             <Table hover className="modern-table mb-0 mx-1">
                                                 <thead>
                                                     <tr>
-                                                        <th>
-                                                            Descrição
-                                                        </th>
-                                                        <th>
-                                                            Valor
-                                                        </th>
+                                                        <th>Descrição</th>
+                                                        <th>Valor</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
@@ -527,7 +472,6 @@ export default function Approvals() {
                                                                     {item.VALOR}
                                                                 </span>
                                                             </td>
-
                                                         </tr>
                                                     ))}
                                                 </tbody>
@@ -543,13 +487,12 @@ export default function Approvals() {
                                 </div>
                             </>
                         )}
-
                     </Modal.Body>
                     <Modal.Footer className="border-0 m-0">
                         <Button
                             variant="danger"
                             onClick={() => selectedApproval && handleReject(selectedApproval)}
-                            disabled={processingAction || loadingTicketDetails}
+                            disabled={processingAction || loadingFlowSteps}
                             className="modern-btn"
                         >
                             {processingAction ? (
@@ -567,7 +510,7 @@ export default function Approvals() {
                         <Button
                             variant="success"
                             onClick={() => selectedApproval && handleApprove(selectedApproval)}
-                            disabled={processingAction || loadingTicketDetails}
+                            disabled={processingAction || loadingFlowSteps}
                             className="modern-btn procceed-btn"
                         >
                             {processingAction ? (
@@ -583,32 +526,8 @@ export default function Approvals() {
                             )}
                         </Button>
                     </Modal.Footer>
-                </Modal >
-            </Row >
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+                </Modal>
+            </Row>
 
             <ResponseModal
                 show={showResponseModal}
@@ -617,7 +536,6 @@ export default function Approvals() {
                 message={apiResponse.message}
                 details={apiResponse.details}
             />
-
 
             {showSuccessAlert &&
                 createPortal(
@@ -641,7 +559,6 @@ export default function Approvals() {
                             <p className="mb-1"><strong>Atendimento:</strong> {alertData.ticket}</p>
                             <p className="mb-1"><strong>Coligada:</strong> {alertData.coligada}</p>
                             <p className="mb-3"><strong>Local:</strong> {alertData.local}</p>
-
                             <div className="fw-bold">A solicitação foi avançada para a próxima etapa.</div>
                         </Alert>
                     </div>,
@@ -649,9 +566,7 @@ export default function Approvals() {
                 )
             }
 
-
-            {
-                showRejectAlert &&
+            {showRejectAlert &&
                 createPortal(
                     <div
                         className="position-fixed top-50 start-50 translate-middle"
@@ -670,11 +585,9 @@ export default function Approvals() {
                             dismissible
                         >
                             <h4 className="mb-3">✔ Aprovação rejeitada!</h4>
-
                             <p className="mb-1"><strong>Atendimento:</strong> {alertData.ticket}</p>
                             <p className="mb-1"><strong>Coligada:</strong> {alertData.coligada}</p>
                             <p className="mb-3"><strong>Local:</strong> {alertData.local}</p>
-
                             <div className="fw-bold">A solicitação foi rejeitada para a próxima etapa.</div>
                         </Alert>
                     </div>,

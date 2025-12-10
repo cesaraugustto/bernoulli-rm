@@ -15,6 +15,12 @@ export async function getTicketDetails(codcoligada: number, codlocal: number, co
   return apiFetch<any>(endpoint, "GET");
 }
 
+export async function getTicketFlowCode(codcoligada: number, codatendimento: number) {
+  const endpoint = `api/framework/v1/consultaSQLServer/RealizaConsulta/API.ERP.0021/0/T/?parameters=CODATENDIMENTO=${encodeURIComponent(codatendimento)};CODCOLIGADA=${encodeURIComponent(codcoligada)}`;
+  return apiFetch<any>(endpoint, "GET");
+}
+
+
 interface StepForwardPayload {
   id: string;
   companyId: number;

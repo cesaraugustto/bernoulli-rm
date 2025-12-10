@@ -136,7 +136,7 @@ export default function Login() {
         
         <div className="login-footer">
           <p>© 2025 Bernoulli Educação</p>
-          <p>Adaptação RM Online - Versão 1.1</p>
+          <p>Adaptação ERP Online - Versão 1.1</p>
         </div>
       </div>
       
